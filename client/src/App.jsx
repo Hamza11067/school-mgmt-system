@@ -8,6 +8,7 @@ import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Attendance from "./pages/Attendance.jsx";
 
 function App() {
   const { token } = useContext(AuthContext);
@@ -22,6 +23,10 @@ function App() {
         <Route
           path="/dashboard"
           element={token ? <Dashboard /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/attendance"
+          element={token ? <Attendance /> : <Navigate to="/" />}
         />
       </Routes>
     </Router>

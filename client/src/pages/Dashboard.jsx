@@ -2,8 +2,10 @@ import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
 import AddStudentModal from "../components/AddStudentModal"; // Modal Import karein
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { token, logout } = useContext(AuthContext);
   const [students, setStudents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal state
@@ -30,13 +32,24 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-gray-800">Student Directory</h1>
         <div className="flex space-x-4">
           {/* Naya Button */}
-          <button 
+          <button
+            onClick={() => navigate("/attendance")}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg mr-2 hover:bg-blue-700"
+          >
+            Take Attendance
+          </button>
+          <button
             onClick={() => setIsModalOpen(true)}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
           >
             + Add Student
           </button>
-          <button onClick={logout} className="bg-red-500 text-white px-4 py-2 rounded-lg">Logout</button>
+          <button
+            onClick={logout}
+            className="bg-red-500 text-white px-4 py-2 rounded-lg"
+          >
+            Logout
+          </button>
         </div>
       </div>
 
@@ -75,9 +88,9 @@ const Dashboard = () => {
       </div>
 
       {/* Modal Component */}
-      <AddStudentModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <AddStudentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         onStudentAdded={fetchStudents} // Add hone ke baad list refresh hogi
       />
     </div>
