@@ -14,7 +14,7 @@ module.exports = function(req, res, next) {
 
   // Check if no token
   if (!token) {
-    return res.status(403).json({ msg: "Authorization denied" });
+    return res.status(403).json({ message: "Authorization denied" });
   }
 
   // Verify token
@@ -23,6 +23,6 @@ module.exports = function(req, res, next) {
     req.user = verify; // User ki ID aur Role request mein save ho jayegi
     next();
   } catch (err) {
-    res.status(401).json({ msg: "Token is not valid" });
+    res.status(401).json({ message: "Token is not valid" });
   }
 };

@@ -1,14 +1,15 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
-import AddStudentModal from "../components/AddStudentModal"; // Modal Import karein
+import StudentModal from "../components/StudentModal";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { token, logout } = useContext(AuthContext);
   const [students, setStudents] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   // Backend se data lane ka function
   const fetchStudents = async () => {
@@ -26,12 +27,37 @@ const Dashboard = () => {
     fetchStudents();
   }, []);
 
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this student?")) {
+      try {
+        await axios.delete(`http://localhost:5000/api/students/delete/${id}`, {
+          headers: { token: token },
+        });
+        alert("Student deleted successfully!");
+        fetchStudents();
+      } catch (err) {
+        console.error("Error deleting student:", err.response || err);
+        const errorMessage = err.response?.data?.message || err.message;
+        alert("Error deleting student: " + errorMessage);
+      }
+    }
+  };
+
+  const handleEdit = (student) => {
+    setSelectedStudent(student);
+    setIsModalOpen(true);
+  };
+
+  const openAddModal = () => {
+    setSelectedStudent(null);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Student Directory</h1>
         <div className="flex space-x-4">
-          {/* Naya Button */}
           <button
             onClick={() => navigate("/attendance")}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg mr-2 hover:bg-blue-700"
@@ -39,7 +65,7 @@ const Dashboard = () => {
             Take Attendance
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openAddModal}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
           >
             + Add Student
@@ -76,8 +102,17 @@ const Dashboard = () => {
                 <td className="px-5 py-4 border-b text-sm">
                   {student.class_name}
                 </td>
-                <td className="px-5 py-4 border-b text-sm">
-                  <button className="text-red-600 hover:text-red-900 font-bold">
+                <td className="px-5 py-4 border-b text-sm space-x-3">
+                  <button
+                    onClick={() => handleEdit(student)}
+                    className="text-blue-600 hover:text-blue-900 font-bold"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(student.id)}
+                    className="text-red-600 hover:text-red-900 font-bold"
+                  >
                     Delete
                   </button>
                 </td>
@@ -88,10 +123,11 @@ const Dashboard = () => {
       </div>
 
       {/* Modal Component */}
-      <AddStudentModal
+      <StudentModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onStudentAdded={fetchStudents} // Add hone ke baad list refresh hogi
+        onStudentSaved={fetchStudents}
+        student={selectedStudent}
       />
     </div>
   );

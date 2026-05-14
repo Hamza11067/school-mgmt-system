@@ -4,7 +4,7 @@ const pool = require('../db'); // Hamara database connection
 const authorize = require('../middleware/authorize');
 
 // API: Register a New Student
-router.post('/add', async (req, res) => {
+router.post('/add', authorize, async (req, res) => {
   try {
     const { name, roll_number, class_id } = req.body;
     
@@ -25,7 +25,7 @@ router.post('/add', async (req, res) => {
 router.get('/all', async (req, res) => {
   try {
     const allStudents = await pool.query(
-      "SELECT students.id, students.name, students.roll_number, classes.class_name FROM students JOIN classes ON students.class_id = classes.id"
+      "SELECT students.id, students.name, students.roll_number, students.class_id, classes.class_name FROM students JOIN classes ON students.class_id = classes.id"
     );
     res.json(allStudents.rows);
   } catch (err) {
@@ -84,19 +84,21 @@ router.put('/update/:id', authorize, async (req, res) => {
     const { id } = req.params;
     const { name, roll_number, class_id } = req.body;
 
+    console.log(`Updating student ${id} with:`, { name, roll_number, class_id });
+
     const updateStudent = await pool.query(
       "UPDATE students SET name = $1, roll_number = $2, class_id = $3 WHERE id = $4 RETURNING *",
       [name, roll_number, class_id, id]
     );
 
     if (updateStudent.rows.length === 0) {
-      return res.status(404).json("Student not found!");
+      return res.status(404).json({ message: "Student not found!" });
     }
 
     res.json({ message: "Student updated!", student: updateStudent.rows[0] });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
+    console.error("Update Error:", err.message);
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
 
@@ -128,10 +130,23 @@ router.get('/monthly-report/:studentId', authorize, async (req, res) => {
 router.delete('/delete/:id', authorize, async (req, res) => {
     try {
         const { id } = req.params;
-        await pool.query("DELETE FROM students WHERE id = $1", [id]);
+        const deleteResult = await pool.query("DELETE FROM students WHERE id = $1", [id]);
+        
+        if (deleteResult.rowCount === 0) {
+            return res.status(404).json({ message: "Student not found!" });
+        }
+
         res.json({ message: "Student deleted successfully!" });
     } catch (err) {
-        console.error(err.message);
+        console.error("Delete Error:", err.message);
+        // Handle Foreign Key Constraint (e.g., student has attendance records)
+        if (err.code === '23503') {
+            return res.status(400).json({ 
+                message: "Cannot delete student because they have attendance records.",
+                error: err.message 
+            });
+        }
+        res.status(500).json({ message: "Server Error", error: err.message });
     }
 });
 

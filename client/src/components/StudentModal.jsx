@@ -1,13 +1,30 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
+const StudentModal = ({ isOpen, onClose, onStudentSaved, student = null }) => {
   const [formData, setFormData] = useState({
     name: '',
     roll_number: '',
     class_id: ''
   });
   const [classes, setClasses] = useState([]);
+
+  // Reset form when modal opens/closes or student changes
+  useEffect(() => {
+    if (student) {
+      setFormData({
+        name: student.name,
+        roll_number: student.roll_number,
+        class_id: student.class_id
+      });
+    } else {
+      setFormData({
+        name: '',
+        roll_number: '',
+        class_id: ''
+      });
+    }
+  }, [isOpen, student]);
 
   // Dropdown ke liye classes fetch karna
   useEffect(() => {
@@ -27,14 +44,26 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/students/add', formData, {
-        headers: { token: localStorage.getItem('token') }
-      });
-      alert("Student Added Successfully!");
-      onStudentAdded(); // Table refresh karne ke liye
+      const token = localStorage.getItem('token');
+      if (student) {
+        // Edit mode
+        await axios.put(`http://localhost:5000/api/students/update/${student.id}`, formData, {
+          headers: { token }
+        });
+        alert("Student Updated Successfully!");
+      } else {
+        // Add mode
+        await axios.post('http://localhost:5000/api/students/add', formData, {
+          headers: { token }
+        });
+        alert("Student Added Successfully!");
+      }
+      onStudentSaved(); // Table refresh karne ke liye
       onClose(); // Modal band karne ke liye
     } catch (err) {
-      alert("Error adding student: " + err.response.data);
+      console.error("Error saving student:", err.response || err);
+      const errorMessage = err.response?.data?.message || err.response?.data || err.message;
+      alert("Error saving student: " + errorMessage);
     }
   };
 
@@ -43,7 +72,9 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Add New Student</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-800">
+          {student ? "Edit Student" : "Add New Student"}
+        </h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -51,6 +82,7 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
             <input 
               type="text" 
               className="mt-1 w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               required
             />
@@ -61,6 +93,7 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
             <input 
               type="text" 
               className="mt-1 w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={formData.roll_number}
               onChange={(e) => setFormData({...formData, roll_number: e.target.value})}
               required
             />
@@ -70,6 +103,7 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
             <label className="block text-sm font-medium text-gray-700">Class</label>
             <select 
               className="mt-1 w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={formData.class_id}
               onChange={(e) => setFormData({...formData, class_id: e.target.value})}
               required
             >
@@ -92,7 +126,7 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
               type="submit" 
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Save Student
+              {student ? "Update Student" : "Save Student"}
             </button>
           </div>
         </form>
@@ -101,4 +135,4 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded }) => {
   );
 };
 
-export default AddStudentModal;
+export default StudentModal;
